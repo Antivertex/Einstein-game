@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Задачи Эйнштейна</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --panel3:#334155;
+    --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --accent2:#0ea5e9;
+    --yes:#22c55e; --no:#ef4444; --border:#475569; --warn:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family: system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+    background: radial-gradient(circle at 20% 0%, #1e293b 0%, #0f172a 60%);
+    color:var(--text); min-height:100vh; padding:16px;
+  }
+  .app{max-width:1200px;margin:0 auto}
+  header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:18px}
+  h1{font-size:1.45rem;margin:0;font-weight:700;letter-spacing:.3px}
+  h1 span{color:var(--accent)}
+  .levels{display:flex;gap:8px;flex-wrap:wrap}
+  button{
+    font-family:inherit;font-size:.92rem;font-weight:600;cursor:pointer;
+    border:1px solid var(--border); background:var(--panel2); color:var(--text);
+    padding:9px 16px; border-radius:10px; transition:.15s; user-select:none;
+  }
+  button:hover{background:var(--panel3); border-color:#64748b; transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  button.active{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#04121f;border-color:transparent}
+  button.primary{background:linear-gradient(135deg,#22c55e,#16a34a);color:#04170b;border-color:transparent}
+  button.ghost{background:transparent}
+  button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+  .banner{
+    display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+    background:linear-gradient(135deg,#1e3a5f,#1e293b);border:1px solid var(--accent2);
+    border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:.92rem;
+  }
+  .banner.hidden{display:none}
+  .banner .btns{display:flex;gap:8px}
+  .banner .btns button{padding:6px 12px;font-size:.85rem}
+
+  .layout{display:grid;grid-template-columns:minmax(280px,380px) 1fr;gap:20px;align-items:start}
+  @media(max-width:900px){.layout{grid-template-columns:1fr}}
+
+  .card{background:rgba(30,41,59,.85);border:1px solid var(--panel3);border-radius:16px;padding:16px 18px;backdrop-filter:blur(6px)}
+  .card h2{font-size:1rem;margin:0 0 12px;color:var(--accent);letter-spacing:.5px;text-transform:uppercase}
+  #clueList{margin:0;padding-left:0;list-style:none;counter-reset:clue}
+  #clueList li{
+    counter-increment:clue; position:relative; padding:8px 8px 8px 34px;
+    border-radius:8px; font-size:.93rem; line-height:1.45; border-bottom:1px solid rgba(71,85,105,.4);
+  }
+  #clueList li:last-child{border-bottom:none}
+  #clueList li::before{
+    content:counter(clue); position:absolute; left:4px; top:8px;
+    width:22px;height:22px;border-radius:50%;background:var(--panel3);color:var(--accent);
+    font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;
+  }
+  #clueList li b{color:#7dd3fc;font-weight:600}
+
+  .table-wrap{overflow-x:auto;border-radius:12px}
+  table.puzzle{border-collapse:separate;border-spacing:0;width:100%;font-size:.9rem}
+  table.puzzle th{
+    background:var(--panel3);color:var(--muted);font-weight:600;font-size:.78rem;
+    text-transform:uppercase;letter-spacing:.5px;padding:9px 6px;border-bottom:2px solid var(--border);
+    position:sticky;top:0;z-index:2;
+  }
+  table.puzzle th.corner{background:var(--panel);border-bottom:2px solid var(--border)}
+  table.puzzle td.val-label{
+    background:rgba(51,65,85,.55);padding:0 12px;white-space:nowrap;font-size:.86rem;
+    border-right:1px solid var(--border);border-bottom:1px solid rgba(71,85,105,.4);color:#cbd5e1;
+  }
+  tr.cat-row td.cat-title{
+    background:linear-gradient(90deg, rgba(56,189,248,.18), transparent);
+    color:var(--accent);font-weight:700;font-size:.8rem;text-transform:uppercase;
+    letter-spacing:1px;padding:7px 12px;border-bottom:1px solid var(--border);
+  }
+  td.cell{
+    width:56px;min-width:44px;height:42px;text-align:center;cursor:pointer;
+    border-right:1px solid rgba(71,85,105,.4);border-bottom:1px solid rgba(71,85,105,.4);
+    transition:background .12s;user-select:none;font-size:1.05rem;font-weight:700;
+  }
+  td.cell:hover{background:rgba(56,189,248,.15)}
+  td.cell.yes{background:rgba(34,197,94,.22);color:var(--yes)}
+  td.cell.no{background:rgba(239,68,68,.07);color:rgba(239,68,68,.55)}
+  td.cell.pop{animation:pop .22s ease}
+  @keyframes pop{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  #message{
+    margin-top:14px;padding:12px 16px;border-radius:10px;font-weight:600;font-size:.94rem;
+    display:none;
+  }
+  #message.show{display:block}
+  #message.ok{background:rgba(34,197,94,.15);border:1px solid var(--yes);color:#86efac}
+  #message.warn{background:rgba(245,158,11,.12);border:1px solid var(--warn);color:#fcd34d}
+  #message.err{background:rgba(239,68,68,.12);border:1px solid var(--no);color:#fca5a5}
+
+  .meta-bar{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:14px;font-size:.86rem;color:var(--muted)}
+  .meta-bar b{color:var(--text)}
+  .timer{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:700;font-size:1rem}
+
+  footer{margin-top:24px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;
+    font-size:.85rem;color:var(--muted);border-top:1px solid var(--panel3);padding-top:14px}
+  .stats{display:flex;gap:18px;flex-wrap:wrap}
+  .stats span{white-space:nowrap}
+  .stats b{color:var(--accent)}
+  .toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--panel3);color:var(--text);padding:12px 22px;border-radius:12px;
+    border:1px solid var(--accent2);box-shadow:0 10px 30px rgba(0,0,0,.5);
+    opacity:0;transition:.25s;pointer-events:none;z-index:100;font-weight:600;font-size:.9rem;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🧩 Задачи <span>Эйнштейна</span></h1>
+    <div class="levels" id="levels">
+      <button data-level="easy">Лёгкий</button>
+      <button data-level="medium">Средний</button>
+      <button data-level="hard">Сложный</button>
+    </div>
+  </header>
+
+  <div id="restoreBanner" class="banner hidden">
+    <div>💾 Найден сохранённый прогресс <span id="restoreInfo"></span></div>
+    <div class="btns">
+      <button class="primary" id="restoreBtn">Восстановить</button>
+      <button class="ghost" id="dismissBtn">Начать заново</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <section class="card">
+      <h2>Подсказки</h2>
+      <ol id="clueList"></ol>
+    </section>
+
+    <section class="card">
+      <div class="meta-bar">
+        <span>Сложность: <b id="levelLabel">—</b></span>
+        <span>Время: <span class="timer" id="timer">00:00</span></span>
+        <span>Домов: <b id="housesLabel">—</b></span>
+      </div>
+      <div class="table-wrap" id="gridWrap"></div>
+      <div class="actions">
+        <button class="primary" id="checkBtn">✓ Проверить</button>
+        <button id="newBtn">🔄 Новая задача</button>
+        <button id="saveBtn">💾 Сохранить прогресс</button>
+        <button class="ghost" id="clearBtn">Очистить</button>
+      </div>
+      <div id="message"></div>
+    </section>
+  </div>
+
+  <footer>
+    <div class="stats" id="statsBar"></div>
+    <button class="ghost" id="resetStatsBtn" style="font-size:.8rem;padding:6px 12px">Сбросить статистику</button>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   ДАННЫЕ
+   ============================================================ */
+const ALL_CATS = [
+  { key:'color', title:'Цвет дома',  values:['Красный','Синий','Зелёный','Жёлтый','Белый'] },
+  { key:'name',  title:'Имя жильца', values:['Анна','Борис','Вера','Глеб','Дина'] },
+  { key:'pet',   title:'Питомец',    values:['Кот','Собака','Попугай','Рыбка','Хомяк'] },
+  { key:'drink', title:'Напиток',    values:['Чай','Кофе','Молоко','Сок','Вода'] },
+  { key:'food',  title:'Блюдо',      values:['Пицца','Суши','Паста','Салат','Суп'] },
+];
+
+const LEVELS = {
+  easy:   { N:3, K:3, label:'Лёгкий' },
+  medium: { N:4, K:4, label:'Средний' },
+  hard:   { N:5, K:5, label:'Сложный' },
+};
+
+const PRIO = { nextLeft:0, same:1, next:2, left:3, at:4, notNext:5, notSame:6 };
+const STORAGE_KEY = 'einstein_puzzle_v1';
+const STATS_KEY   = 'einstein_stats_v1';
+
+/* ============================================================
+   УТИЛИТЫ
+   ============================================================ */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function fmtTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+
+/* ============================================================
+   РЕШАТЕЛЬ (backtracking + MRV)
+   ============================================================ */
+function countSolutions(clues, N, K, limit){
+  const assign = [];
+  const used   = [];
+  for(let c=0;c<K;c++){
+    assign.push(new Int8Array(N).fill(-1));
+    used.push(new Uint8Array(N));
+  }
+
+  // индекс ограничений по переменным
+  const byVar = [];
+  for(let c=0;c<K;c++){
+    const row = [];
+    for(let v=0;v<N;v++) row.push([]);
+    byVar.push(row);
+  }
+  for(const cl of clues){
+    if(cl.type==='at') byVar[cl.c][cl.v].push(cl);
+    else { byVar[cl.c1][cl.v1].push(cl); byVar[cl.c2][cl.v2].push(cl); }
+  }
+
+  function ok(cl){
+    if(cl.type==='at'){
+      const p = assign[cl.c][cl.v];
+      return p===-1 || p===cl.house;
+    }
+    const p1 = assign[cl.c1][cl.v1];
+    const p2 = assign[cl.c2][cl.v2];
+    if(p1===-1 || p2===-1) return true;
+    switch(cl.type){
+      case 'same':     return p1===p2;
+      case 'next':     return Math.abs(p1-p2)===1;
+      case 'nextLeft': return p1+1===p2;
+      case 'left':     return p1<p2;
+      case 'notSame':  return p1!==p2;
+      case 'notNext':  return Math.abs(p1-p2)!==1;
+    }
+    return true;
+  }
+
+  function domainOf(c,v){
+    const res = [];
+    for(let h=0;h<N;h++){
+      if(used[c][h]) continue;
+      assign[c][v] = h;
+      let good = true;
+      const list = byVar[c][v];
+      for(let i=0;i<list.length;i++){
+        if(!ok(list[i])){ good=false; break; }
+      }
+      assign[c][v] = -1;
+      if(good) res.push(h);
+    }
+    return res;
+  }
+
+  let count = 0;
+
+  function search(){
+    if(count>=limit) return;
+    let bc=-1,bv=-1,bd=null;
+    for(let c=0;c<K;c++){
+      for(let v=0;v<N;v++){
+        if(assign[c][v]!==-1) continue;
+        const d = domainOf(c,v);
+        if(d.length===0) return;
+        if(bd===null || d.length<bd.length){
+          bc=c; bv=v; bd=d;
+          if(d.length===1) break;
+        }
+      }
+      if(bd!==null && bd.length===1) break;
+    }
+    if(bc===-1){ count++; return; }
+    for(let i=0;i<bd.length;i++){
+      const h = bd[i];
+      assign[bc][bv] = h;
+      used[bc][h] = 1;
+      search();
+      used[bc][h] = 0;
+      assign[bc][bv] = -1;
+      if(count>=limit) return;
+    }
+  }
+
+  search();
+  return count;
+}
+
+/* ============================================================
+   ГЕНЕРАЦИЯ ЗАДАЧИ
+   ============================================================ */
+function generateSolution(N,K){
+  const sol = [];
+  for(let c=0;c<K;c++){
+    sol.push(shuffle(Array.from({length:N},(_,i)=>i)));
+  }
+  return sol;
+}
+
+function buildPool(sol,N,K){
+  const pos = [];
+  for(let c=0;c<K;c++){
+    pos[c] = new Array(N);
+    for(let h=0;h<N;h++) pos[c][sol[c][h]] = h;
+  }
+  const pool = [];
+
+  for(let c=0;c<K;c++)
+    for(let v=0;v<N;v++)
+      pool.push({type:'at', c, v, house: pos[c][v]});
+
+  for(let c1=0;c1<K;c1++){
+    for(let c2=c1+1;c2<K;c2++){
+      for(let v1=0;v1<N;v1++){
+        for(let v2=0;v2<N;v2++){
+          const p1 = pos[c1][v1], p2 = pos[c2][v2];
+          const base = {c1,v1,c2,v2};
+          if(p1===p2) pool.push(Object.assign({},base,{type:'same'}));
+          if(Math.abs(p1-p2)===1) pool.push(Object.assign({},base,{type:'next'}));
+          if(p1+1===p2) pool.push(Object.assign({},base,{type:'nextLeft'}));
+          if(p1<p2) pool.push(Object.assign({},base,{type:'left'}));
+          if(p1!==p2) pool.push(Object.assign({},base,{type:'notSame'}));
+          if(Math.abs(p1-p2)!==1) pool.push(Object.assign({},base,{type:'notNext'}));
+        }
+      }
+    }
+  }
+  return pool;
+}
+
+function minimizeClues(clues,N,K){
+  let result = clues.slice();
+  const keep = new Set(result.map((_,i)=>i));
+  // удаляем сначала самые "слабые" подсказки
+  const order = result
+    .map((cl,i)=>({i, prio: PRIO[cl.type]}))
+    .sort((a,b)=> b.prio - a.prio);
+
+  for(const {i} of order){
+    keep.delete(i);
+    const test = result.filter((_,j)=>keep.has(j));
+    if(countSolutions(test,N,K,2)!==1){
+      keep.add(i);
+    }
+  }
+  return result.filter((_,i)=>keep.has(i));
+}
+
+function generateClues(sol,N,K){
+  const pool = buildPool(sol,N,K);
+
+  const groups = {};
+  for(const cl of pool){
+    if(!groups[cl.type]) groups[cl.type] = [];
+    groups[cl.type].push(cl);
+  }
+  for(const k in groups) groups[k] = shuffle(groups[k]);
+
+  const order = ['nextLeft','same','next','left','at','notNext','notSame'];
+  const limits = { at:1, notSame:1, notNext:1 };
+  const counts = {};
+  const queues = order.map(t=>({type:t, list:groups[t]||[], idx:0}));
+
+  const clues = [];
+  let done = false;
+
+  while(!done){
+    let added = false;
+    for(const q of queues){
+      if(limits[q.type]!==undefined && (counts[q.type]||0) >= limits[q.type]) continue;
+      if(q.idx >= q.list.length) continue;
+
+      const cl = q.list[q.idx++];
+      clues.push(cl);
+      counts[q.type] = (counts[q.type]||0)+1;
+
+      if(countSolutions(clues,N,K,2)===1){
+        done = true;
+        break;
+      }
+      added = true;
+      if(clues.length >= 60){ done = true; break; }
+    }
+    if(!added) break;
+  }
+
+  return minimizeClues(clues,N,K);
+}
+
+/* ============================================================
+   СОСТОЯНИЕ ИГРЫ
+   ============================================================ */
+let game = null;
+let timerInterval = null;
+let toastTimeout = null;
+
+function buildGame(level){
+  const {N,K,label} = LEVELS[level];
+  const cats = ALL_CATS.slice(0,K).map(c=>({
+    key: c.key,
+    title: c.title,
+    values: c.values.slice(0,N),
+  }));
+  const solution = generateSolution(N,K);
+  const clues = generateClues(solution,N,K);
+  const grid = Array.from({length:K}, ()=>Array.from({length:N}, ()=>new Array(N).fill(0)));
+
+  return {
+    level, N, K, cats, solution, clues, grid,
+    startTime: Date.now(),
+    solved: false,
+    label,
+  };
+}
+
+/* ============================================================
+   ТЕКСТ ПОДСКАЗОК
+   ============================================================ */
+function clueText(cl){
+  const val = (c,v)=>'«' + game.cats[c].values[v] + '»';
+  switch(cl.type){
+    case 'at':       return `Дом №${cl.house+1} — ${val(cl.c,cl.v)}.`;
+    case 'same':     return `${val(cl.c1,cl.v1)} и ${val(cl.c2,cl.v2)} — в одном доме.`;
+    case 'next':     return `${val(cl.c1,cl.v1)} и ${val(cl.c2,cl.v2)} — в соседних домах.`;
+    case 'nextLeft': return `${val(cl.c1,cl.v1)} — сразу слева от ${val(cl.c2,cl.v2)}.`;
+    case 'left':     return `${val(cl.c1,cl.v1)} — левее, чем ${val(cl.c2,cl.v2)}.`;
+    case 'notSame':  return `${val(cl.c1,cl.v1)} и ${val(cl.c2,cl.v2)} — в разных домах.`;
+    case 'notNext':  return `${val(cl.c1,cl.v1)} и ${val(cl.c2,cl.v2)} — не в соседних домах.`;
+  }
+  return '';
+}
+
+/* ============================================================
+   РЕНДЕР
+   ============================================================ */
+const gridWrap     = document.getElementById('gridWrap');
+const clueList     = document.getElementById('clueList');
+const levelLabel   = document.getElementById('levelLabel');
+const housesLabel  = document.getElementById('housesLabel');
+const timerEl      = document.getElementById('timer');
+const messageEl    = document.getElementById('message');
+
+function renderClues(){
+  clueList.innerHTML = '';
+  game.clues.forEach(cl=>{
+    const li = document.createElement('li');
+    li.innerHTML = clueText(cl)
+      .replace(/«([^»]+)»/g, '<b>«$1»</b>');
+    clueList.appendChild(li);
+  });
+}
+
+function renderGrid(){
+  const {N,K,cats,grid} = game;
+  let html = '<table class="puzzle"><thead><tr><th class="corner"></th>';
+  for(let h=0;h<N;h++) html += `<th>Дом ${h+1}</th>`;
+  html += '</tr></thead><tbody>';
+
+  for(let c=0;c<K;c++){
+    html += `<tr class="cat-row"><td colspan="${N+1}" class="cat-title">${cats[c].title}</td></tr>`;
+    for(let v=0;v<N;v++){
+      html += `<tr><td class="val-label">${cats[c].values[v]}</td>`;
+      for(let h=0;h<N;h++){
+        const s = grid[c][v][h];
+        const cls = s===1 ? 'yes' : s===2 ? 'no' : '';
+        const sym = s===1 ? '✓' : s===2 ? '✕' : '';
+        html += `<td class="cell ${cls}" data-c="${c}" data-v="${v}" data-h="${h}">${sym}</td>`;
+      }
+      html += '</tr>';
+    }
+  }
+  html += '</tbody></table>';
+  gridWrap.innerHTML = html;
+}
+
+function renderMeta(){
+  levelLabel.textContent  = game.label;
+  housesLabel.textContent = game.N;
+  document.querySelectorAll('#levels button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.level === game.level);
+  });
+}
+
+function renderAll(){
+  renderClues();
+  renderGrid();
+  renderMeta();
+  updateTimer();
+  startTimer();
+}
+
+/* ============================================================
+   ЛОГИКА СЕТКИ
+   ============================================================ */
+function setYes(c,v,h){
+  const {N,K,grid} = game;
+  // снимаем прежние ✓ в этой строке и в этом столбце-категории
+  for(let hh=0;hh<N;hh++) if(hh!==h && grid[c][v][hh]===1) grid[c][v][hh]=0;
+  for(let vv=0;vv<N;vv++) if(vv!==v && grid[c][vv][h]===1) grid[c][vv][h]=0;
+  grid[c][v][h] = 1;
+}
+
+function propagate(){
+  const {N,K,grid} = game;
+  let changed = true;
+  let guard = 0;
+
+  while(changed && guard++ < 200){
+    changed = false;
+
+    // 1) если в строке (значение) есть ✓ — остальные ✗
+    for(let c=0;c<K;c++){
+      for(let v=0;v<N;v++){
+        let yesH = -1;
+        for(let h=0;h<N;h++) if(grid[c][v][h]===1){ yesH=h; break; }
+        if(yesH>=0){
+          for(let h=0;h<N;h++){
+            if(h!==yesH && grid[c][v][h]===0){ grid[c][v][h]=2; changed=true; }
+          }
+        }
+      }
+      // 2) если в столбце дома для категории есть ✓ — остальные ✗
+      for(let h=0;h<N;h++){
+        let yesV = -1;
+        for(let v=0;v<N;v++) if(grid[c][v][h]===1){ yesV=v; break; }
+        if(yesV>=0){
+          for(let v=0;v<N;v++){
+            if(v!==yesV && grid[c][v][h]===0){ grid[c][v][h]=2; changed=true; }
+          }
+        }
+      }
+    }
+
+    // 3) авто-✓: если в строке осталась одна не-✗ ячейка
+    for(let c=0;c<K;c++){
+      for(let v=0;v<N;v++){
+        let cnt=0,lastH=-1,hasYes=false;
+        for(let h=0;h<N;h++){
+          if(grid[c][v][h]===1){ hasYes=true; break; }
+          if(grid[c][v][h]!==2){ cnt++; lastH=h; }
+        }
+        if(!hasYes && cnt===1 && grid[c][v][lastH]===0){
+          grid[c][v][lastH]=1; changed=true;
+        }
+      }
+      // авто-✓ по столбцу категории
+      for(let h=0;h<N;h++){
+        let cnt=0,lastV=-1,hasYes=false;
+        for(let v=0;v<N;v++){
+          if(grid[c][v][h]===1){ hasYes=true; break; }
+          if(grid[c][v][h]!==2){ cnt++; lastV=v; }
+        }
+        if(!hasYes && cnt===1 && grid[c][lastV][h]===0){
+          grid[c][lastV][h]=1; changed=true;
+        }
+      }
+    }
+  }
+}
+
+function handleCellClick(c,v,h){
+  if(game.solved) return;
+  const cur = game.grid[c][v][h];
+  if(cur===0){
+    setYes(c,v,h);
+  } else if(cur===1){
+    game.grid[c][v][h] = 2;
+  } else {
+    game.grid[c][v][h] = 0;
+  }
+  propagate();
+  renderGrid();
+  hideMessage();
+  if(isSolved()) onWin();
+}
+
+gridWrap.addEventListener('click', e=>{
+  const cell = e.target.closest('.cell');
+  if(!cell) return;
+  handleCellClick(+cell.dataset.c, +cell.dataset.v, +cell.dataset.h);
+});
+
+/* ============================================================
+   ПРОВЕРКА / ПОБЕДА
+   ============================================================ */
+function isSolved(){
+  const {N,K,solution,grid} = game;
+  for(let c=0;c<K;c++){
+    for(let h=0;h<N;h++){
+      if(grid[c][solution[c][h]][h]!==1) return false;
+    }
+  }
+  return true;
+}
+
+function countCorrect(){
+  const {N,K,solution,grid} = game;
+  let n=0;
+  for(let c=0;c<K;c++)
+    for(let h=0;h<N;h++)
+      if(grid[c][solution[c][h]][h]===1) n++;
+  return n;
+}
+
+function onWin(){
+  if(game.solved) return;
+  game.solved = true;
+  stopTimer();
+
+  const elapsed = Math.floor((Date.now()-game.startTime)/1000);
+  updateStats(game.level, elapsed);
+
+  showMessage(`🎉 Поздравляем! Задача решена за ${fmtTime(elapsed)}.`, 'ok');
+  localStorage.removeItem(STORAGE_KEY);
+  hideRestoreBanner();
+  renderStatsBar();
+}
+
+function checkAnswer(){
+  if(game.solved){ showMessage('Задача уже решена 🎉','ok'); return; }
+  if(isSolved()){ onWin(); return; }
+  const correct = countCorrect();
+  const total = game.N * game.K;
+  if(correct === 0){
+    showMessage(`Пока ни одной верной ячейки. Всего нужно расставить ${total}.`, 'warn');
+  } else if(correct < total){
+    showMessage(`Верно ${correct} из ${total} расстановок. Продолжайте!`, 'warn');
+  } else {
+    showMessage('Что-то не так — проверьте крестики.', 'err');
+  }
+}
+
+function showMessage(text, type){
+  messageEl.textContent = text;
+  messageEl.className = 'show ' + type;
+}
+function hideMessage(){ messageEl.className = ''; }
+
+/* ============================================================
+   ТАЙМЕР
+   ============================================================ */
+function startTimer(){
+  stopTimer();
+  timerInterval = setInterval(updateTimer, 500);
+}
+function stopTimer(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+}
+function updateTimer(){
+  if(!game) return;
+  const sec = Math.floor((Date.now()-game.startTime)/1000);
+  timerEl.textContent = fmtTime(sec);
+}
+
+/* ============================================================
+   СТАТИСТИКА
+   ============================================================ */
+function defaultStats(){
+  return {
+    easy:   {solved:0, best:null},
+    medium: {solved:0, best:null},
+    hard:   {solved:0, best:null},
+    total: 0,
+  };
+}
+function loadStats(){
+  try{
+    const raw = localStorage.getItem(STATS_KEY);
+    if(!raw) return defaultStats();
+    const s = JSON.parse(raw);
+    const d = defaultStats();
+    for(const k of ['easy','medium','hard']){
+      if(s[k]){ d[k].solved = s[k].solved|0; d[k].best = s[k].best||null; }
+    }
+    d.total = s.total|0;
+    return d;
+  }catch(e){ return defaultStats(); }
+}
+function saveStats(s){
+  try{ localStorage.setItem(STATS_KEY, JSON.stringify(s)); }catch(e){}
+}
+function updateStats(level, elapsed){
+  const s = loadStats();
+  s[level].solved++;
+  s.total++;
+  if(s[level].best===null || elapsed < s[level].best) s[level].best = elapsed;
+  saveStats(s);
+}
+function renderStatsBar(){
+  const s = loadStats();
+  const bar = document.getElementById('statsBar');
+  bar.innerHTML =
+    `<span>Лёгких: <b>${s.easy.solved}</b>${s.easy.best!==null?` (лучшее ${fmtTime(s.easy.best)})`:''}</span>` +
+    `<span>Средних: <b>${s.medium.solved}</b>${s.medium.best!==null?` (лучшее ${fmtTime(s.medium.best)})`:''}</span>` +
+    `<span>Сложных: <b>${s.hard.solved}</b>${s.hard.best!==null?` (лучшее ${fmtTime(s.hard.best)})`:''}</span>` +
+    `<span>Всего решено: <b>${s.total}</b></span>`;
+}
+
+/* ============================================================
+   СОХРАНЕНИЕ / ВОССТАНОВЛЕНИЕ
+   ============================================================ */
+function serializeGame(){
+  return {
+    v: 1,
+    level: game.level,
+    N: game.N,
+    K: game.K,
+    cats: game.cats,
+    solution: game.solution,
+    clues: game.clues,
+    grid: game.grid,
+    elapsed: Date.now() - game.startTime,
+    savedAt: Date.now(),
+  };
+}
+
+function saveProgress(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializeGame()));
+    showToast('💾 Прогресс сохранён');
+  }catch(e){
+    showToast('Не удалось сохранить прогресс');
+  }
+}
+
+function loadSaved(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return null;
+    const d = JSON.parse(raw);
+    if(!d || d.v!==1 || !d.cats || !d.solution || !d.grid) return null;
+    return d;
+  }catch(e){ return null; }
+}
+
+function restoreGame(data){
+  game = {
+    level: data.level,
+    N: data.N,
+    K: data.K,
+    cats: data.cats,
+    solution: data.solution,
+    clues: data.clues,
+    grid: data.grid,
+    startTime: Date.now() - (data.elapsed||0),
+    solved: false,
+    label: LEVELS[data.level].label,
+  };
+  renderAll();
+  hideMessage();
+  hideRestoreBanner();
+  showToast('↩ Прогресс восстановлен');
+}
+
+function showRestoreBanner(data){
+  const banner = document.getElementById('restoreBanner');
+  const info = document.getElementById('restoreInfo');
+  const d = new Date(data.savedAt || Date.now());
+  info.textContent = `(${LEVELS[data.level].label}, ${d.toLocaleString('ru-RU')})`;
+  banner.classList.remove('hidden');
+}
+function hideRestoreBanner(){
+  document.getElementById('restoreBanner').classList.add('hidden');
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+function showToast(text){
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   КНОПКИ / СОБЫТИЯ
+   ============================================================ */
+document.getElementById('levels').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-level]');
+  if(!btn) return;
+  startNewGame(btn.dataset.level);
+});
+
+document.getElementById('newBtn').addEventListener('click', ()=>{
+  startNewGame(game ? game.level : 'easy');
+});
+
+document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+document.getElementById('saveBtn').addEventListener('click', saveProgress);
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  if(!game || game.solved) return;
+  for(let c=0;c<game.K;c++)
+    for(let v=0;v<game.N;v++)
+      for(let h=0;h<game.N;h++)
+        game.grid[c][v][h] = 0;
+  renderGrid();
+  hideMessage();
+});
+
+document.getElementById('restoreBtn').addEventListener('click', ()=>{
+  const data = loadSaved();
+  if(data) restoreGame(data);
+  else hideRestoreBanner();
+});
+document.getElementById('dismissBtn').addEventListener('click', ()=>{
+  hideRestoreBanner();
+});
+
+document.getElementById('resetStatsBtn').addEventListener('click', ()=>{
+  if(confirm('Сбросить всю статистику?')){
+    saveStats(defaultStats());
+    renderStatsBar();
+    showToast('Статистика сброшена');
+  }
+});
+
+/* ============================================================
+   ЗАПУСК
+   ============================================================ */
+function startNewGame(level){
+  if(!LEVELS[level]) level = 'easy';
+  showMessage('Генерация задачи…','warn');
+  // даём браузеру отрисовать сообщение, затем генерируем
+  setTimeout(()=>{
+    game = buildGame(level);
+    renderAll();
+    hideMessage();
+    renderStatsBar();
+  }, 10);
+}
+
+function init(){
+  renderStatsBar();
+
+  const saved = loadSaved();
+  if(saved) showRestoreBanner(saved);
+
+  // По умолчанию — новая случайная задача (как и требуется при обновлении страницы)
+  startNewGame('easy');
+
+  // горячие клавиши: 1/2/3 — сложность
+  document.addEventListener('keydown', e=>{
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if(e.key === '1') startNewGame('easy');
+    if(e.key === '2') startNewGame('medium');
+    if(e.key === '3') startNewGame('hard');
+  });
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>
